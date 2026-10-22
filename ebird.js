@@ -17,6 +17,7 @@ function addEbirdTaxon(taxon) {
     };
     birds.push(bird);
   }
+  bird.catalogHidden = false;
   if (!lifeSpecies.includes(bird.id)) lifeSpecies.push(bird.id);
   save();
 }
