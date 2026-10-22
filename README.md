@@ -1,5 +1,54 @@
-我的鳥圖鑑 PWA 原型 v0.2
+# 我的鳥圖鑑 PWA v0.4
 
-新增每個鳥種的 Google 相簿網址與封面設定。封面可先從裝置選取、縮小後存在瀏覽器本機；圖鑑會顯示封面。
+可直接部署到 GitHub Pages 的靜態 PWA。觀察作品、鳥種封面與 Google 相簿網址只保存在目前瀏覽器的本機儲存空間，沒有帳號系統或付費後端。
 
-重要：Google Photos Picker API 尚未串接。直接從 Google 相簿選封面，需要先設定 Google Cloud 專案、OAuth 與 Photos Picker API。這一版不能自動掃描所有既有相簿。資料仍存在瀏覽器本機，請定期備份。正式版建議將照片縮圖儲存改用 IndexedDB。
+## 功能
+
+- 依中文名、學名搜尋，依科別及名錄狀態篩選。
+- 生命清單會依已新增作品的鳥種統計。
+- 拍攝作品可記錄標題、日期、地點、座標、器材、曝光資訊、筆記及縮圖。
+- 地圖以 OpenStreetMap 顯示含座標的作品標記。地圖底圖需連線。
+- 每種鳥可設定本機封面與 Google 相簿連結。相簿網址會在新分頁開啟。
+- 完整 JSON 備份 / 還原，CSV / TSV 及 Excel 名錄匯入。
+- 可選的 eBird 全球物種搜尋（中文名、英文名、學名）；搜尋結果能直接加入生涯鳥種。
+- PWA 靜態頁面可離線開啟；不含線上地圖底圖的離線快取。
+
+## 搜尋 eBird 物種
+
+eBird 有提供公開 API（[API v2 文件](https://documenter.getpostman.com/view/664302/S1ENwy59?version=latest)）；taxonomy endpoint 支援 JSON、類別及名稱語系。API key 是綁定帳戶的個人 key，請勿把它寫進 GitHub Pages 的公開前端。ZIP 內附 `ebird-worker.js` 作為 Cloudflare Worker 代理，會合併 eBird 的中文及英文 taxonomy 名稱：
+
+1. 到 eBird 的 [API key 頁面](https://ebird.org/api/keygen)申請個人 key。
+2. 在 Cloudflare 建立一個 Worker（啟用 `workers.dev` 網址），貼上 `ebird-worker.js` 並部署。
+3. 在 Worker 的 Settings → Variables and Secrets 新增 **Secret** `EBIRD_API_KEY`，貼上 key 後儲存並重新部署。key 只存在 Worker，不會進入 PWA 或 JSON 備份。
+4. App「封面設定」貼上 Worker 的 HTTPS 根網址，例如 `https://your-worker.workers.dev`，儲存後到「生命清單」搜尋。
+
+Worker 只允許 `https://chacotw.github.io` 呼叫，並只請求 eBird 的物種分類資料。App 在本機快取分類資料 7 天，搜尋字串由本機過濾，不會傳給 eBird。Cloudflare Workers Free 目前每日有 100,000 次請求上限；一般個人搜尋量通常遠低於此限制。[Cloudflare 官方限制](https://developers.cloudflare.com/workers/platform/limits/)
+
+如果不想設定 Worker，仍可直接使用下面的 Excel / CSV 名錄匯入搜尋鳥種。
+
+## 匯入 2026 台灣鳥類名錄
+
+從[中華民國野鳥學會 2026 年臺灣鳥類名錄頁面](https://www.bird.org.tw/download/5698)下載 Excel，回到 App「鳥類圖鑑」底部選擇檔案。Excel 首次解析時會從 SheetJS 官方 CDN 下載解析器；名錄在瀏覽器中處理，不會上傳。也可使用 CSV 或 TSV。名錄匯入會以該名錄取代目前鳥種清單，同名鳥種原有封面及紀錄會保留。
+
+## Google Photos Picker
+
+此版本**沒有串接 Google Photos Picker API**。Google 官方 Picker 要求開發者建立 Cloud 專案、啟用 API、設定 OAuth 用戶端及同意畫面；GitHub Pages 的純靜態檔案不能安全保存用戶端密鑰，也不應假裝已完成 OAuth。現有可靠流程是把相片下載到手機 / 電腦後，從「封面設定」選取本機相片，再貼上 Google 相簿分享網址。Picker 若要正式整合，需先建立 Google Cloud OAuth 設定、限制授權網域為 GitHub Pages 網域並完成 Google 要求的驗證流程，再實作短效授權與 Picker session。
+
+## 部署到既有 GitHub Pages
+
+1. 解壓 ZIP。
+2. 到 `https://github.com/chacotw/my-birding-app`，選 `Add file` → `Upload files`。
+3. 上傳並覆蓋 `index.html`、`manifest.json`、`sw.js`，新增 `ebird.js`、`icon.svg` 及本說明檔。`ebird-worker.js` 是部署到 Cloudflare Worker 的程式，不要當成 Pages 前端檔案部署。
+4. 提交到 `main`。GitHub Pages 會自動重新部署；稍候重新整理 `https://chacotw.github.io/my-birding-app/`。
+5. 手機可在網站選單使用「加入主畫面」。更新後若看到舊版，完全關閉 App / 瀏覽器再開，或清除此網站的快取。
+
+原型的 `icon-192.png` 與 `icon-512.png` 可繼續保留；此版本使用附帶的 SVG 圖示。
+
+## 本機儲存提醒
+
+資料存在每台裝置、每個瀏覽器各自的儲存區。清除網站資料、換瀏覽器或換手機不會自動同步；請定期用「下載完整備份」保存 JSON。匯入備份會取代目前的名錄、作品與設定。照片先縮小為 JPEG 後放入備份，請妥善保管備份檔。
+
+## 名錄資料來源
+
+中華民國野鳥學會，2026 年臺灣鳥類名錄（2026-08 修正）。本 App 不重新散布名錄檔，提供使用者從官方頁面取得並在本機匯入。
+
