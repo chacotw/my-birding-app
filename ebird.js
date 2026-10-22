@@ -10,6 +10,7 @@ function addEbirdTaxon(taxon) {
       latin: taxon.sciName || "",
       family: taxon.familyComName || taxon.familySciName || "未分類",
       status: "",
+      taiwanList: false,
       emoji: "🐦",
       ebirdCode: taxon.speciesCode,
       category: taxon.category
@@ -100,3 +101,5 @@ saveEbirdProxy.onclick = () => {
   }
 };
 ebirdSearchBtn.onclick = searchEbird;
+
+
